@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with Sandy</title>
+    <style>
+        /* Default Light Mode */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background-color: #121212;
+            color: #ffffff;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            border-radius: 10px;
+            background: #fff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container.dark-mode {
+            background-color: #1e1e1e;
+            color: #ffffff;
+        }
+
+        #chatBox {
+            border: 1px solid #ddd;
+            padding: 10px;
+            height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+            background-color: inherit;
+            color: inherit;
+        }
+
+        button {
+            cursor: pointer;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+
+        .theme-toggle, .copy-button, .download-button, .logout-button {
+            margin-bottom: 10px;
+        }
+
+        .feedback-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .feedback-container button {
+            cursor: pointer;
+            padding: 10px 15px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            background-color: #0078d7;
+            color: white;
+        }
+
+        .feedback-container button:hover {
+            background-color: #005fa3;
+        }
+
+        .feedback-message {
+            margin-top: 10px;
+            color: green;
+            font-size: 16px;
+        }
+    </style>
+    <script>
+        function toggleTheme() {
+            const body = document.body;
+
+            // Toggle the dark-mode class
+            body.classList.toggle('dark-mode');
+
+            // Save the theme preference to localStorage
+            const currentTheme = body.classList.contains('dark-mode') ? 'dark-mode' : 'light-mode';
+            localStorage.setItem('theme', currentTheme);
+        }
+
+        // Apply saved theme on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'light-mode';
+            document.body.classList.add(savedTheme);
+        });
+
+        function copyChatText() {
+            const chatBox = document.getElementById("chatBox");
+            const textToCopy = chatBox.textContent;
+
+            if (textToCopy.trim() === "") {
+                alert("No text to copy!");
+                return;
+            }
+
+            navigator.clipboard.writeText(textToCopy)
+                .then(() => alert("Chat text copied to clipboard!"))
+                .catch(err => alert("Failed to copy text: " + err));
+        }
+
+        function downloadChat() {
+            const chatBox = document.getElementById("chatBox");
+            const chatContent = chatBox.textContent;
+
+            if (chatContent.trim() === "") {
+                alert("No chat content to download!");
+                return;
+            }
+
+            const blob = new Blob([chatContent], { type: "text/plain" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "chat.txt";
+            link.click();
+        }
+
+        async function sendMessage() {
+            const messageInput = document.getElementById("message");
+            const chatBox = document.getElementById("chatBox");
+            const message = messageInput.value;
+
+            if (message.trim() === "") return;
+
+            chatBox.innerHTML += `<div><strong>You:</strong> ${message}</div>`;
+            messageInput.value = "";
+
+            const response = await fetch("/chat", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ message }),
+            });
+
+            const data = await response.json();
+            chatBox.innerHTML += `<div><strong>Sandy:</strong> ${data.response}</div>`;
+        }
+
+        function submitFeedback(rating) {
+            const feedbackMessage = document.getElementById('feedbackMessage');
+            feedbackMessage.textContent = `Thank you, feedback submitted: ${rating}`;
+        }
+    </script>
+</head>
+<body>
+    <a href="register.html">Register</a>
+    <a href="loggedin.html">Login</a>
+    <div class="container">
+        <button class="theme-toggle" onclick="toggleTheme()">Toggle Dark Mode</button>
+        <button class="copy-button" onclick="copyChatText()">Copy Chat Text</button>
+        <button class="download-button" onclick="downloadChat()">Download Chat as TXT</button>
+
+        <!-- Logout Button -->
+        <form action="/logout" method="GET" style="display: inline;">
+            <button class="logout-button" type="submit">Logout</button>
+        </form>
+
+        <h2>Welcome, {{ username }}</h2>
+        <div id="chatBox"></div>
+        <input type="text" id="message" placeholder="Type your message here">
+        <button onclick="sendMessage()">Send</button>
+
+        <!-- Feedback System -->
+        <div class="feedback-container">
+            <h3>Rate Your Experience</h3>
+            <button onclick="submitFeedback(1)">1</button>
+            <button onclick="submitFeedback(2)">2</button>
+            <button onclick="submitFeedback(3)">3</button>
+            <div id="feedbackMessage" class="feedback-message"></div>
+        </div>
+    </div>
+</body>
+</html>
